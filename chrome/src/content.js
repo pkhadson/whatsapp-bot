@@ -1,38 +1,24 @@
-function loaded(){
-	var logged = $('[data-icon="chat"]').length;
-	var not_logged = $('[name="rememberMe"]').length
-	//console.log(logged, not_logged)
-	if(logged==0&&not_logged==0){
-		setTimeout(loaded, 500)
-	}else{
-		if(logged>0){
-			run()
-		}else{
-			//console.log('Não ta logado')
-		}
-	}
-}
-loaded();
+
+
+
+window.ws = new WebSocket('ws://localhost:8080')
 
 
 const eventFire = (el, etype) => {
 	var evt = document.createEvent("MouseEvents");
 	evt.initMouseEvent(etype, true, true, window,0, 0, 0, 0, 0, false, false, false, false, 0, null);
-	el.dispatchEvent(evt);
+	el.dispatchEvent(evt);	
 }
 
 
-var run = ()=>{
-	window.ws = new WebSocket('ws://localhost:8080')
-	ws.onmessage = function (result){
-		var result = result.data.split('|')
-		queue.push({
-			number: result[0],
-			message: result[1]
-		})
-	}
 
-	const mainEl = document.body.childNodes[1].childNodes[0].lastElementChild
+
+
+
+function run(){
+
+
+	const mainEl = document.body.childNodes[0].childNodes[0].lastElementChild
 	const mainChat = mainEl.childNodes[2].firstChild.lastChild.firstChild.firstChild.firstChild.firstChild.firstChild.firstChild
 
 
@@ -43,10 +29,18 @@ var run = ()=>{
 				var link = mainEl.querySelector('.copyable-area').lastChild.lastChild.lastChild.querySelector('a')
 				eventFire(link,'click')
 					setTimeout(()=>{
-						eventFire(mainEl.querySelector('span[data-icon="send"]'), 'click');
-						queue.shift()
-						//console.log(new Date().getTime())
-						readQueue()
+						var checkLoad = function (){
+							var text = $('[class*=app-wrapper-web] > *:not(div)').text()
+							console.log(text)
+							if(text==''){
+								eventFire(mainEl.querySelector('span[data-icon="send"]'), 'click');
+								queue.shift()
+								readQueue()
+							}else{
+								setTimeout(checkLoad, 1000);
+							}
+						}
+						checkLoad();
 					},500);
 			})
 		},500);
@@ -66,15 +60,72 @@ var run = ()=>{
 
 	var queue = [];
 	var readQueue = function (){
+		console.log('LER FILA')
 		if(queue.length>0){
 			selectChat(queue[0].number,queue[0].message)
 		}else{
-			//console.log('N tem mensagem a ser enviada');
-			setTimeout(readQueue,1000)
+			
+			var title_browser = $('title').text();
+			if(title_browser.replace(/[^0-9]/g, '')!=''){
+				var scrollchats = mainEl.children[2].firstElementChild.children[3];
+				var last_st = scrollchats.scrollTop;
+				var scrolldown = function (){
+					var title_browser = $('title').text();
+					if(title_browser.replace(/[^0-9]/g, '')=='') {console.log('A');return;}
+					var an_unread = mainEl.children[2].firstElementChild.children[3].querySelector("div > span > div > span:not([data-icon])");
+					if(an_unread==null){
+						scrollchats.scrollTop+=200;
+						if(last_st==scrollchats.scrollTop) {setTimeout(readQueue,1000);scrollchats.scrollTop = 0;return;}
+						last_st = scrollchats.scrollTop
+						setTimeout(scrolldown,500)
+					}else{
+						scrollchats.scrollTop = 0;
+						eventFire(an_unread, 'mousedown')
+						setTimeout(function (){
+							var message_out = mainEl.querySelectorAll('.message-out');
+							message_out = message_out[message_out.length-1]
+							message_out = $(message_out).parent()
+							message_out.nextAll().each(function (){
+								console.log($(this).find('[dir="ltr"]').text())
+							})
+							setTimeout(readQueue,1000)
+						},1000)
+					}			
+				}
+				scrolldown()
+			}else{
+				scrollchats.scrollTop = 0;
+				setTimeout(readQueue,1000)
+			}
 		}
 	}
+
+
+	/*queue.push({
+		number:'5534991476764',
+		message: 'TESTE'
+	})*/
+
 	readQueue()
+
+
 }
+
+function loaded(){console.log('---')
+	var logged = $('[data-icon="chat"]').length;
+	var not_logged = $('[name="rememberMe"]').length
+	//console.log(logged, not_logged)
+	if(logged==0&&not_logged==0){
+		setTimeout(loaded, 500)
+	}else{
+		if(logged>0){
+			run()
+		}else{
+			//console.log('Não ta logado')
+		}
+	}
+}
+loaded();
 
 
 /*
