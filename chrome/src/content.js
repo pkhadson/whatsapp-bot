@@ -1,12 +1,5 @@
 
 
-
-ws = new WebSocket('ws://localhost:3001')
-	
-ws.onclose = function (){
-	location.reload();
-}
-
 const eventFire = (el, etype) => {
 
 	var evt = document.createEvent("MouseEvents");
@@ -14,22 +7,149 @@ const eventFire = (el, etype) => {
 	el.dispatchEvent(evt);	
 }
 
+var mainEl
+var scroll
+var lastScroll = 0;
 
 
+var lastSC = 0;
+function run(n){
+	if(lastScroll==new Date().getSeconds()){
+		console.error('aq')
+	}
+	lastScroll = new Date().getSeconds()
+	console.log(lastScroll)
+	if(n=='PRIMEIRA'){
+		console.log('INICIANDO')
+		mainEl = document.body.childNodes[0].childNodes[0].lastElementChild
+		scroll = mainEl.children[2].firstElementChild.children[3]
+	}
+	var unread = scroll.querySelector("div > span > div > span:not([data-icon])");
+	console.log(unread)
+	if(!unread){
+		console.log('n tem nada n lido')
 
+		console.log('TENTA DESCER')
+		lastScroll = scroll.scrollTop;
+		scroll.scrollTop+=2000;
+		if(lastScroll==scroll.scrollTop){
+			scroll.scrollTop=0
+			eventFire($('[title="+55 34 3293-7100"]').get(0),'mousedown')
+			console.log('NÃO DESCE MAIS, volta pro topo')
+		}else{
+			console.log('DESCEU')
+		}
+		setTimeout(run,1000)
+		return;
+	}else{
+		if($(unread).text()!='N'){
+			unread.innerHTML = 'N'
+			console.log('1 n lida')
+			eventFire(unread,'mousedown')
+			setTimeout(function (){
+				var line_unread = $('#main > div > .copyable-area > [tabindex="0"]>div:last-child>div>span[class]:not([dir])').parent()
+				var message = [];
+				if($('#main footer [role="button"]').length>0){
+					console.log('NOVO CHAT')
+					$('.message-in').each(function (){
+						message.push($(this).find('.selectable-text').text())
+						var outs = $(this).find('.message-out').length
+						console.log(outs, $(this).find('.message-out'))
+						if(outs>0){
+							message = []
+						}
+					})
+				}else{
+					line_unread.nextAll().each(function (){
+						message.push($(this).find('.selectable-text').text())
+						var outs = $(this).find('.message-out').length
+						console.log(outs, $(this).find('.message-out'))
+						if(outs>0){
+							message = []
+						}
+					})
+				}
+				message = message.join(" \n")
+				var params = {
+					text: message,
+					phone: $('#main header [dir]').text().replace(/[^0-9]/g, ''	)
+				}
+				var message_out = $.ajax({
+					type: 'post',
+					async: false,
+					url: 'http://127.0.0.1:3000/uratelekinho/message',
+					crossDomain: true,
+					data: params
+				}).responseText
+
+				console.log(message_out)
+
+				if(message && message!=""){
+					var messageBox = mainEl.querySelector('[contenteditable]')
+					messageBox.innerHTML = message_out
+					eventFire(messageBox,'input')
+					mainEl.querySelector('span[data-icon="send"]')
+					eventFire(mainEl.querySelector('span[data-icon="send"]'), 'click');
+
+					scroll.scrollTop=0
+					eventFire($('[title="+55 34 3293-7100"]').get(0),'mousedown')
+					console.log('1d')
+					setTimeout(run,500)
+				}else{
+					setTimeout(run,500)
+				}
+			},5)
+		}else{
+			console.log('TENTA DESCER')
+			lastScroll = scroll.scrollTop;
+			scroll.scrollTop+=2000;
+			if(lastScroll==scroll.scrollTop){
+				scroll.scrollTop=0
+				eventFire($('[title="+55 34 3293-7100"]').get(0),'mousedown')
+				console.log('NÃO DESCE MAIS, volta pro topo')
+			}else{
+				console.log('DESCEU')
+			}
+			setTimeout(run,500)
+		}
+
+		/*if(!has_new){
+			console.log('TENTA DESCER')
+			lastScroll = scroll.scrollTop;
+			scroll.scrollTop+=2000;
+			if(lastScroll==scroll.scrollTop){
+				scroll.scrollTop=0
+				eventFire($('[title="+55 34 3293-7100"]').get(0),'mousedown')
+				console.log('NÃO DESCE MAIS, volta pro topo')
+				setTimeout(run,2000)
+			}else{
+				console.log('DESCEU')
+				setTimeout(run,500)
+			}
+		}else{
+			console.log('RODA DENOVO')
+			setTimeout(run,500)
+		}*/
+	}
+}
+
+function checkLoad(){
+	var icon_chat = $('[data-icon="chat"]').length
+	if(icon_chat==0){
+		console.log('Não carregou, tenta daqui 1s')
+		setTimeout(checkLoad, 1000)
+	}else{
+		setTimeout(function(){run('PRIMEIRA')},1000);
+	}
+}
+
+checkLoad()
+
+/*
 
 
 function run(){
 
-	ws.onmessage = function (msg){
-		msg = msg.data.split('|')
-		console.log(msg)
-		queue.push({
-                	number:'55'+msg[0],
-                	message:msg[1]
-        	})
-		eventFire(mainChat, 'mousedown')
-	}
 
 
 	const mainEl = document.body.childNodes[0].childNodes[0].lastElementChild
@@ -140,7 +260,7 @@ function run(){
 	/*queue.push({
 		number:'5534999744352',
 		message: 'TESTE'
-	})*/
+	})
 
 	readQueue()
 
@@ -164,7 +284,7 @@ function loaded(){console.log('---')
 loaded();
 
 
-/*
+
 function run(){
 	//console.log('Tentando conectar ao socket')
 	window.ws = new WebSocket('ws://localhost:8080')
