@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/pkhadson/whatsapp-bot#readme",
   "devDependencies": {
-    "grunt": "^1.0.3"
+    "grunt": "^1.5.3"
   },
   "dependencies": {
     "prompt": "^1.0.0",
